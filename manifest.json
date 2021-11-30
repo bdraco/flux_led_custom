@@ -1,5 +1,6 @@
 {
   "domain": "flux_led",
+  "version": "0.0.2",
   "name": "Flux LED/MagicHome",
   "config_flow": true,
   "documentation": "https://www.home-assistant.io/integrations/flux_led",
