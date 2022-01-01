@@ -1,4 +1,4 @@
-"""Utils for FluxLED/MagicHome."""
+"""Utils for Magic Home."""
 from __future__ import annotations
 
 from flux_led.aio import AIOWifiLedBulb
@@ -16,6 +16,11 @@ from .const import FLUX_COLOR_MODE_TO_HASS
 def _hass_color_modes(device: AIOWifiLedBulb) -> set[str]:
     color_modes = device.color_modes
     return {_flux_color_mode_to_hass(mode, color_modes) for mode in color_modes}
+
+
+def format_as_flux_mac(mac: str | None) -> str | None:
+    """Convert a device registry formatted mac to flux mac."""
+    return None if mac is None else mac.replace(":", "").upper()
 
 
 def _flux_color_mode_to_hass(
