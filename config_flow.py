@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import contextlib
+import logging
 from typing import Any, Final, cast
 
 from flux_led.const import (
@@ -17,7 +18,7 @@ import voluptuous as vol
 
 from homeassistant import config_entries
 from homeassistant.components import dhcp
-from homeassistant.const import CONF_HOST, CONF_NAME
+from homeassistant.const import CONF_HOST
 from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers import device_registry as dr
@@ -46,6 +47,7 @@ from .discovery import (
 from .util import format_as_flux_mac
 
 CONF_DEVICE: Final = "device"
+_LOGGER = logging.getLogger(__name__)
 
 
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -66,6 +68,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_dhcp(self, discovery_info: dhcp.DhcpServiceInfo) -> FlowResult:
         """Handle discovery via dhcp."""
+        _LOGGER.debug("Discovered via dhcp: %s", discovery_info)
         self._discovered_device = FluxLEDDiscovery(
             ipaddr=discovery_info.ip,
             model=None,
@@ -81,10 +84,10 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )
         return await self._async_handle_discovery()
 
-    async def async_step_discovery(
+    async def async_step_integration_discovery(
         self, discovery_info: DiscoveryInfoType
     ) -> FlowResult:
-        """Handle discovery."""
+        """Handle integration discovery."""
         self._discovered_device = cast(FluxLEDDiscovery, discovery_info)
         return await self._async_handle_discovery()
 
@@ -145,10 +148,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Create a config entry from a device."""
         self._async_abort_entries_match({CONF_HOST: device[ATTR_IPADDR]})
         name = async_name_from_discovery(device)
-        data: dict[str, Any] = {
-            CONF_HOST: device[ATTR_IPADDR],
-            CONF_NAME: name,
-        }
+        data: dict[str, Any] = {CONF_HOST: device[ATTR_IPADDR]}
         async_populate_data_from_discovery(data, data, device)
         return self.async_create_entry(
             title=name,
@@ -168,8 +168,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             except FLUX_LED_EXCEPTIONS:
                 errors["base"] = "cannot_connect"
             else:
-                mac_address = device[ATTR_ID]
-                if mac_address is not None:
+                if (mac_address := device[ATTR_ID]) is not None:
                     await self.async_set_unique_id(
                         dr.format_mac(mac_address), raise_on_progress=False
                     )
